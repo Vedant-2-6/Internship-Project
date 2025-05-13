@@ -1,0 +1,41 @@
+.shared-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.shared-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.shared-notes-container {
+    padding: 20px;
+    flex: 1;
+  }
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+  }
+.no-notes-message {
+    color: #bbb;
+    text-align: center;
+    margin-top: 32px;
+    font-size: 1.2rem;
+    width: 100%;
+  }
+
+.shared-notes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 16px;
+  overflow-y: auto;
+  height: 100%;
+}
