@@ -3,6 +3,8 @@ import './NoteCard.css';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 const NoteCard = ({
   note,
@@ -74,12 +76,31 @@ const NoteCard = ({
     setIsEditing(false);
   };
 
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = io('http://localhost:5000');
+    socketRef.current.emit('joinNote', note.id);
+
+    socketRef.current.on('noteUpdated', (data) => {
+      if (data.title !== undefined) setTitle(data.title);
+      if (data.content !== undefined) setContent(data.content);
+      if (data.color !== undefined) setColor(data.color);
+      if (data.reminder !== undefined) setReminder(data.reminder);
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [note.id]);
+
   const handleUpdate = async () => {
     if (onUpdate) {
       onUpdate(note.id, title, content);
       setIsEditing(false);
+      // Emit update to collaborators
+      socketRef.current?.emit('noteUpdated', { noteId: note.id, data: { title, content } });
     } else {
-      // Directly update the note in the backend if onUpdate is not provided
       try {
         await axios.patch(
           `http://localhost:5000/api/notes/${note.id}`,
@@ -87,6 +108,8 @@ const NoteCard = ({
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setIsEditing(false);
+        // Emit update to collaborators
+        socketRef.current?.emit('noteUpdated', { noteId: note.id, data: { title, content } });
       } catch (error) {
         console.error('Failed to update note', error);
         alert('Failed to update note. Please try again.');

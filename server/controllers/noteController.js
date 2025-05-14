@@ -45,10 +45,23 @@ exports.getNoteById = async (req, res) => {
 exports.updateNote = async (req, res) => {
   try {
     const { title, content, color, reminder } = req.body;
-    const note = await Note.findOne({ where: { id: req.params.id, userId: req.user.userId } });
+    // Find the note by id only (not userId)
+    const note = await Note.findOne({ where: { id: req.params.id } });
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
     }
+
+    // Check if user is owner
+    if (note.userId !== req.user.userId) {
+      // Not owner, check if collaborator with edit permission
+      const collaborator = await Collaborator.findOne({
+        where: { noteId: note.id, userId: req.user.userId, permissionLevel: 'edit' }
+      });
+      if (!collaborator) {
+        return res.status(403).json({ message: 'You do not have permission to edit this note' });
+      }
+    }
+
     if (title !== undefined) note.title = title;
     if (content !== undefined) note.content = content;
     if (color !== undefined) note.color = color;
@@ -157,9 +170,20 @@ exports.setReminder = async (req, res) => {
 // Generic PATCH handler to update any note fields
 exports.updateNoteFields = async (req, res) => {
   try {
-    const note = await Note.findOne({ where: { id: req.params.id, userId: req.user.userId } });
+    // Find the note by id only (not userId)
+    const note = await Note.findOne({ where: { id: req.params.id } });
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
+    }
+    // Check if user is owner
+    if (note.userId !== req.user.userId) {
+      // Not owner, check if collaborator with edit permission
+      const collaborator = await Collaborator.findOne({
+        where: { noteId: note.id, userId: req.user.userId, permissionLevel: 'edit' }
+      });
+      if (!collaborator) {
+        return res.status(403).json({ message: 'You do not have permission to edit this note' });
+      }
     }
     // Update only the fields provided in the request body
     Object.keys(req.body).forEach((key) => {
